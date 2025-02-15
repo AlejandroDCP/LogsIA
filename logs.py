@@ -5,7 +5,7 @@ import boto3
 #cliente s3 y bedrock
 s3_client = boto3.client("s3")
 
-bedrock_client = boto3.client('bedrock-runtime')
+bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-1')
 
 #Config URL LOKI y s3 
 LOKI_URL = "http://172.19.2.12:3100/loki/api/v1/query_range"
@@ -16,7 +16,7 @@ S3_FOLDER = "loki_logs"
 start_time = int(time.time() - 600) * 1_000_000_000 
 params = {
     "query": '{host="Corp_Cancun-1"} |= "error"',
-    "limit": 1000,  
+    "limit": 10,  
     "start": start_time
 }
 
@@ -74,17 +74,22 @@ print(log_data)
 
 
 
-# Preparar el prompt para Bedrock (enviamos los logs como prompt)
-prompt = f"Analiza estos logs y dime si hay patrones de errores o eventos anómalos:\n{log_data}"
+# Preparar el prompt para Bedrock 
+prompt = f"Analiza estos logs y dime si hay patrones de errores o eventos anómalos ,repuestas en español:\n{log_data}"
 
 # Enviar los logs a Bedrock para interpretación
 response = bedrock_client.invoke_model(
-    modelId='anthropic.claude-3-5-sonnet-20241022-v2:0',  
+    modelId='amazon.titan-text-premier-v1:0',  
     contentType='application/json',
     accept='application/json',
-    body=json.dumps({"prompt": prompt, "max_tokens_to_sample": 200})
+    body=json.dumps({
+       "inputText": prompt
+    }
+    )
 )
 
 # Obtener y mostrar la respuesta de Bedrock
 analysis = response['body'].read().decode()
 print("Análisis de Bedrock:", analysis)
+
+
