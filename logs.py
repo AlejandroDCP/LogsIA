@@ -13,11 +13,11 @@ S3_BUCKET = "cadu-mylogs"
 S3_FOLDER = "loki_logs"
 
 #registro de los ultimos 10 min y filtrar por el tag de error
-start_time = int(time.time() - 600) * 1_000_000_000 
+# start_time = int(time.time() - 600) * 1_000_000_000 
 params = {
-    "query": '{host="Corp_Cancun-1"} |= "error"',
-    "limit": 10,  
-    "start": start_time
+    "query": '{host="Corp_Cancun-1"}|~ "level=\\\"error\\\""',
+    "limit": 10 
+    # "start": start_time
 }
 
 response = requests.get(LOKI_URL, params=params)
@@ -46,12 +46,12 @@ with open(log_filename, "w") as file:
 s3_key = f"{S3_FOLDER}/loki_logs/{int(time.time())}.json"
 s3_client.upload_file(log_filename, S3_BUCKET, s3_key)
 
-print(f"Logs guardados en S3: s3://{S3_BUCKET}/{s3_key}")
-
+# print(f"Logs guardados en S3: s3://{S3_BUCKET}/{s3_key}")
+print("log extraido")
 
 ### interpretr log de loki con modelos de Bedrock 
 
-# Listar los objetos en el folder de S3
+# # Listar los objetos en el folder de S3
 response = s3_client.list_objects_v2(
     Bucket=S3_BUCKET,
     Prefix=S3_FOLDER
@@ -69,13 +69,13 @@ else:
 response = s3_client.get_object(Bucket=S3_BUCKET, Key=latest_file_key)
 log_data = response['Body'].read().decode('utf-8')
 
-# Imprimir los logs para verificar
+# Imprimir contenido 
 print(log_data)
 
 
 
 # Preparar el prompt para Bedrock 
-prompt = f"Analiza estos logs y dime si hay patrones de errores o eventos anómalos ,repuestas en español:\n{log_data}"
+prompt = f"Analiza estos logs evento por evento y dame posibles soluciones, solo respuestas en español:\n{log_data}"
 
 # Enviar los logs a Bedrock para interpretación
 response = bedrock_client.invoke_model(
@@ -89,7 +89,7 @@ response = bedrock_client.invoke_model(
 )
 
 # Obtener y mostrar la respuesta de Bedrock
-analysis = response['body'].read().decode()
-print("Análisis de Bedrock:", analysis)
+analys = response['body'].read().decode()
+print("Análisis de Bedrock:", analys)
 
-
+ 
